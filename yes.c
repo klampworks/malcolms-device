@@ -269,6 +269,9 @@ ssize_t generic_read(char *buf, const char *msg) {
 		put_user(*i, buf++);
 	}
 
+	/* Make sure that the correct number is returned. */
+	/*printk("result = %d\n", i - msg); */
+
 	return i - msg;
 }
 
