@@ -8,7 +8,7 @@
 #include <linux/types.h> /*size_t */
 #include <linux/proc_fs.h>
 #include <linux/fcntl.h> /* O_ACCMODE */
-/*#include <asm/system.h> *//*cli(), *_flags */
+#include <asm/system.h> /*cli(), *_flags */
 #include <asm/uaccess.h> /*copy_from/to_user */
 #include <linux/device.h> /* class_creatre */
 #include <linux/cdev.h> /* cdev_init */
@@ -200,10 +200,10 @@ int memory_release(struct inode *inode, struct file *filp) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	/*
+	
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 	printk("<1>Minor number is %d\n", minor);
-	*/
+	
 
 	const char *msg[] = {"yes", "Yes", "YES"};
 
@@ -219,6 +219,7 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 	if(global_options.opt_i)
 		index = 2;
 
+	printk("returning %d\n", read);
 	return read;
 }
 
@@ -228,7 +229,7 @@ ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	static int index = 0;
 
-	int read =  generic_read(buf, msg[index]);
+	ssize_t read = generic_read(buf, msg[index]);
 
 	/* Rewind logic */
 	if (rewind || ++(index) == 3)
@@ -262,12 +263,13 @@ ssize_t generic_read(char *buf, const char *msg) {
 	}
 
 	char *i = msg;
-	int len = msg + strlen(msg) + 1;
+	size_t len = msg + strlen(msg) + 1;
+
 	for (; i < len; i++) {
 		put_user(*i, buf++);
 	}
 
-	return len;
+	return i - msg;
 }
 
 ssize_t memory_write(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
