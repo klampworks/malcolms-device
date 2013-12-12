@@ -8,45 +8,60 @@
 #include <linux/types.h> /*size_t */
 #include <linux/proc_fs.h>
 #include <linux/fcntl.h> /* O_ACCMODE */
-#include <asm/system.h> /*cli(), *_flags */
+/*#include <asm/system.h> *//*cli(), *_flags */
 #include <asm/uaccess.h> /*copy_from/to_user */
 #include <linux/device.h> /* class_creatre */
 #include <linux/cdev.h> /* cdev_init */
 
 MODULE_LICENSE("GPL v2");
 
-int opt_i = 0,
-	opt_q = 0,
-	opt_v = 1;
-unsigned opt_s = 0;
+/* These options will be copied into the global_options struct */
+int opt_i = 0;
+int opt_q = 0;
+int opt_v = 1;
+int opt_s = 0;
+
+/* Struct for passing localised settings. */
+struct options {
+
+	int opt_i;
+	int opt_q;
+	int opt_v;
+	int opt_s;
+} global_options;
 
 module_param(opt_i, int, 0000);
 module_param(opt_q, int, 0000);
 module_param(opt_v, int, 0000);
-module_param(opt_s, uint, 0000);
+module_param(opt_s, int, 0000);
 
 //MODULE_PARAM_DESC(opt_i, "Case insensitive output.");
 
 int memory_open(struct inode *inode, struct file *filp);
 int memory_release(struct inode *inode, struct file *filp);
-ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t memory_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 void memory_exit(void);
 int memory_init(void);
 int create_cdev(struct cdev *, const char *, struct class *, int );
+ssize_t generic_read(char *, const char *);
 
 /* Struct for registering typical file access functions */
 struct file_operations memory_fops = {
-	read: memory_read,
+	read: yes_read,
 	write: memory_write,
 	open: memory_open,
 	release: memory_release
 };
 
+struct file_operations no_fops = {
+	read: no_read,
+};
+
 /* Register init and exit functions */
 module_init(memory_init);
 module_exit(memory_exit);
-
 
 int rewind = 1;
 
@@ -54,13 +69,28 @@ long next_call;
 
 dev_t first = 0, major;
 struct class *cl;
+
 struct cdev yes_cdev;
 struct cdev no_cdev;
+
+struct m_device {
+	
+	char *name;
+	int minor;
+	struct cdev cdev;
+	struct file_operations fops;
+};
 
 #include <linux/time.h>
 int memory_init(void) {
 
-	if (opt_s) {
+	/* Setup the global_options struct for later use */
+	global_options.opt_i = opt_i;
+	global_options.opt_q = opt_q;
+	global_options.opt_v = opt_v;
+	global_options.opt_s = opt_s;
+
+	if (global_options.opt_s) {
 		struct timespec ti;
 		getnstimeofday(&ti); 
 		next_call = 0;
@@ -84,8 +114,8 @@ int memory_init(void) {
 	printk("<1>memory: Obtained major number %d\n", major);
 
 	/* Disable the v flag if q is set */
-	if (opt_q) 
-		opt_v = 0;
+	if (global_options.opt_q) 
+		global_options.opt_v = 0;
 
 	/*Create a device class for udev*/
 	cl = class_create(THIS_MODULE, "memory");
@@ -96,7 +126,10 @@ int memory_init(void) {
 		goto fail;
 	}
 
+	cdev_init(&yes_cdev, &memory_fops);
 	int err1 = create_cdev(&yes_cdev, "yes", cl, 0);
+
+	cdev_init(&no_cdev, &no_fops);
 	int err2 = create_cdev(&no_cdev, "no", cl, 1);
 
 	if (err1 || err2)
@@ -112,7 +145,6 @@ int memory_init(void) {
 
 int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor) {
 
-	cdev_init(cdev, &memory_fops);
 	cdev->owner = THIS_MODULE;
 
 	int err = cdev_add(cdev, MKDEV(major, minor), 1);
@@ -166,15 +198,58 @@ int memory_release(struct inode *inode, struct file *filp) {
 	return 0;
 }
 
-ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
+	/*
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 	printk("<1>Minor number is %d\n", minor);
+	*/
 
 	const char *msg[] = {"yes", "Yes", "YES"};
+
 	static int index = 0;
 
-	if (opt_s) {
+	int read =  generic_read(buf, msg[index]);
+
+	/* Rewind logic */
+	if (rewind || ++(index) == 3)
+		index = 0;
+
+	/* Case insensitive */
+	if(global_options.opt_i)
+		index = 2;
+
+	return read;
+}
+
+ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+
+	const char *msg[] = {"no", "No", "NO"};
+
+	static int index = 0;
+
+	int read =  generic_read(buf, msg[index]);
+
+	/* Rewind logic */
+	if (rewind || ++(index) == 3)
+		index = 0;
+
+	/* Case insensitive */
+	if(global_options.opt_i)
+		index = 2;
+
+	return read;
+}
+
+ssize_t generic_read(char *buf, const char *msg) {
+
+	if (!global_options.opt_v) {
+
+		/* Is it ok to return a fake number of bytes read? */
+		return 1;
+	}
+
+	if (global_options.opt_s) {
 		struct timespec ti;
 		getnstimeofday(&ti); 
 
@@ -183,27 +258,16 @@ ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 			return 1;
 		}
 
-		next_call = ti.tv_sec + opt_s;
+		next_call = ti.tv_sec + global_options.opt_s;
 	}
 
-	if (opt_v) {
-
-		char *i = msg[index];
-		for (; i < msg[index] + 3; i++) {
-			put_user(*i, buf++);
-		}
-
-		put_user('\0', buf);
+	char *i = msg;
+	int len = msg + strlen(msg) + 1;
+	for (; i < len; i++) {
+		put_user(*i, buf++);
 	}
-	
-	if (rewind || ++index > 2)
-		index = 0;
 
-	if(opt_i)
-		index = 2;
-
-	return 4;
-	
+	return len;
 }
 
 ssize_t memory_write(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
