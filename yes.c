@@ -52,7 +52,7 @@ int rewind = 1;
 
 long next_call;
 
-dev_t first = 0;
+dev_t first = 0, major;
 struct class *cl;
 struct cdev yes_cdev;
 struct cdev no_cdev;
@@ -69,19 +69,19 @@ int memory_init(void) {
 	/*Register the device */
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
-		0, 	/* The first minor number */
+		0, 	/* The major minor number */
 		2, 	/* Count of minor numbers required */
 		"memory"/* Name */
 	);
 
 	if (result < 0) {
-		printk("<1>memory: cannot obtains major number %d\n", first);
+		printk("<1>memory: cannot obtains major number %d\n", major);
 		return result;
 	}
 
 	/*Keep the major number we have been given. */
-	first = MAJOR(first);
-	printk("<1>memory: Obtained major number %d\n", first);
+	major = MAJOR(first);
+	printk("<1>memory: Obtained major number %d\n", major);
 
 	/* Disable the v flag if q is set */
 	if (opt_q) 
@@ -115,7 +115,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 	cdev_init(cdev, &memory_fops);
 	cdev->owner = THIS_MODULE;
 
-	int err = cdev_add(cdev, MKDEV(first, minor), 1);
+	int err = cdev_add(cdev, MKDEV(major, minor), 1);
 
 	if (err) {
 
@@ -125,7 +125,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 
 	struct device *device = device_create(cl, 
 		NULL, /*No Parent device*/
-		MKDEV(first, minor), 
+		MKDEV(major, minor), 
 		NULL, /* No additional data */
 		name);
 
@@ -143,12 +143,12 @@ void memory_exit(void) {
 	cdev_del(&no_cdev);
 
 	unregister_chrdev_region(
-		MKDEV(first, 0), /* The first device number. */
+		first, 		/* The major device number. */
 		2		/* The number of minor devices */
 	);
 
-	device_destroy(cl, MKDEV(first, 0));
-	device_destroy(cl, MKDEV(first, 1));
+	device_destroy(cl, MKDEV(major, 0));
+	device_destroy(cl, MKDEV(major, 1));
 
 	class_destroy(cl);
 
@@ -170,6 +170,7 @@ ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 	printk("<1>Minor number is %d\n", minor);
+
 	const char *msg[] = {"yes", "Yes", "YES"};
 	static int index = 0;
 
