@@ -200,10 +200,10 @@ int memory_release(struct inode *inode, struct file *filp) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	
+	/*
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 	printk("<1>Minor number is %d\n", minor);
-	
+	*/
 
 	const char *msg[] = {"yes", "Yes", "YES"};
 
