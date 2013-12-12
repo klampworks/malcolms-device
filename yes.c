@@ -1,5 +1,4 @@
 #include <linux/init.h>
-/*#include <linux/config.h>*/
 #include <linux/module.h>
 #include <linux/kernel.h> /* printk() */
 #include <linux/slab.h> /*kmallic() */
@@ -35,24 +34,22 @@ module_param(opt_q, int, 0000);
 module_param(opt_v, int, 0000);
 module_param(opt_s, int, 0000);
 
-//MODULE_PARAM_DESC(opt_i, "Case insensitive output.");
-
-int memory_open(struct inode *inode, struct file *filp);
-int memory_release(struct inode *inode, struct file *filp);
+int malc_open(struct inode *inode, struct file *filp);
+int malc_release(struct inode *inode, struct file *filp);
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
-ssize_t memory_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
-void memory_exit(void);
-int memory_init(void);
+ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+void malc_exit(void);
+int malc_init(void);
 int create_cdev(struct cdev *, const char *, struct class *, int );
 ssize_t generic_read(char *, const char *);
 
 /* Struct for registering typical file access functions */
-struct file_operations memory_fops = {
+struct file_operations malc_fops = {
 	read: yes_read,
-	write: memory_write,
-	open: memory_open,
-	release: memory_release
+	write: malc_write,
+	open: malc_open,
+	release: malc_release
 };
 
 struct file_operations no_fops = {
@@ -60,8 +57,8 @@ struct file_operations no_fops = {
 };
 
 /* Register init and exit functions */
-module_init(memory_init);
-module_exit(memory_exit);
+module_init(malc_init);
+module_exit(malc_exit);
 
 int rewind = 1;
 
@@ -82,7 +79,7 @@ struct m_device {
 };
 
 #include <linux/time.h>
-int memory_init(void) {
+int malc_init(void) {
 
 	/* Setup the global_options struct for later use */
 	global_options.opt_i = opt_i;
@@ -101,24 +98,24 @@ int memory_init(void) {
 		&first, /* Return data */
 		0, 	/* The major minor number */
 		2, 	/* Count of minor numbers required */
-		"memory"/* Name */
+		"malc"/* Name */
 	);
 
 	if (result < 0) {
-		printk("<1>memory: cannot obtains major number %d\n", major);
+		printk("<1>malc: cannot obtains major number %d\n", major);
 		return result;
 	}
 
 	/*Keep the major number we have been given. */
 	major = MAJOR(first);
-	printk("<1>memory: Obtained major number %d\n", major);
+	printk("<1>malc: Obtained major number %d\n", major);
 
 	/* Disable the v flag if q is set */
 	if (global_options.opt_q) 
 		global_options.opt_v = 0;
 
 	/*Create a device class for udev*/
-	cl = class_create(THIS_MODULE, "memory");
+	cl = class_create(THIS_MODULE, "malc");
 	
 	if (IS_ERR(cl)) {
 
@@ -126,7 +123,7 @@ int memory_init(void) {
 		goto fail;
 	}
 
-	cdev_init(&yes_cdev, &memory_fops);
+	cdev_init(&yes_cdev, &malc_fops);
 	int err1 = create_cdev(&yes_cdev, "yes", cl, 0);
 
 	cdev_init(&no_cdev, &no_fops);
@@ -135,11 +132,11 @@ int memory_init(void) {
 	if (err1 || err2)
 		goto fail;
 
-	printk("<1>Inserting memory module\n");
+	printk("<1>Inserting malc module\n");
 	return 0;
 
 	fail:
-		memory_exit();
+		malc_exit();
 		return result;
 }
 
@@ -161,7 +158,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 		NULL, /* No additional data */
 		name);
 
-	//Will only check second definition.
+	/*Will only check second definition. */
 	if (IS_ERR(device)) {
 		return 1;
 	}
@@ -169,7 +166,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 	return 0;
 }
 
-void memory_exit(void) {
+void malc_exit(void) {
 
 	cdev_del(&yes_cdev);
 	cdev_del(&no_cdev);
@@ -184,16 +181,16 @@ void memory_exit(void) {
 
 	class_destroy(cl);
 
-	printk("<1>Removing memory module\n");
+	printk("<1>Removing malc module\n");
 }
 
 
-int memory_open(struct inode *inode, struct file *filp) {
+int malc_open(struct inode *inode, struct file *filp) {
 
 	return 0;
 }
 
-int memory_release(struct inode *inode, struct file *filp) {
+int malc_release(struct inode *inode, struct file *filp) {
 
 	return 0;
 }
@@ -275,7 +272,7 @@ ssize_t generic_read(char *buf, const char *msg) {
 	return i - msg;
 }
 
-ssize_t memory_write(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	char *tmp;
 
