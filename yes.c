@@ -209,7 +209,7 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 	int read =  generic_read(buf, msg[index]);
 
 	/* Rewind logic */
-	if (rewind || ++(index) == 3)
+	if (rewind && ++(index) == 3)
 		index = 0;
 
 	/* Case insensitive */
