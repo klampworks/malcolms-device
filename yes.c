@@ -100,7 +100,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		2, 	/* Count of minor numbers required */
+		4, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -179,14 +179,18 @@ void malc_exit(void) {
 
 	cdev_del(&yes_cdev);
 	cdev_del(&no_cdev);
+	cdev_del(&yes1_cdev);
+	cdev_del(&yess_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		2		/* The number of minor devices */
+		4		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
 	device_destroy(cl, MKDEV(major, 1));
+	device_destroy(cl, MKDEV(major, 2));
+	device_destroy(cl, MKDEV(major, 3));
 
 	class_destroy(cl);
 
