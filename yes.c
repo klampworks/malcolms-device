@@ -56,8 +56,9 @@ struct file_operations no_fops = {
 struct cdev yes_cdev,
        	    no_cdev,
 	    yes1_cdev,
-	    yess_cdev;
-	    yesr_cdev;
+	    yess_cdev,
+	    yesr_cdev,
+	    yesi_cdev;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -101,7 +102,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		5, 	/* Count of minor numbers required */
+		6, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -141,6 +142,9 @@ int malc_init(void) {
 
 	cdev_init(&yesr_cdev, &yes_fops);
 	int err5 = create_cdev(&yesr_cdev, "yes.r", cl, 4);
+
+	cdev_init(&yesi_cdev, &yes_fops);
+	int err6 = create_cdev(&yesi_cdev, "yes.i", cl, 5);
 
 	if (err1 || err2 || err3)
 		goto fail;
@@ -186,10 +190,11 @@ void malc_exit(void) {
 	cdev_del(&yes1_cdev);
 	cdev_del(&yess_cdev);
 	cdev_del(&yesr_cdev);
+	cdev_del(&yesi_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		5		/* The number of minor devices */
+		6		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -197,6 +202,7 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 2));
 	device_destroy(cl, MKDEV(major, 3));
 	device_destroy(cl, MKDEV(major, 4));
+	device_destroy(cl, MKDEV(major, 5));
 
 	class_destroy(cl);
 
@@ -230,6 +236,10 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 			return generic_read(buf, yes_msg[rand]);
 			}
+		case 5:
+			/* yes.i always UPPER case. */
+			return generic_read(buf, yes_msg[2]);
+			
 	}
 
 	static int index = 0;
