@@ -45,7 +45,7 @@ int create_cdev(struct cdev *, const char *, struct class *, int );
 ssize_t generic_read(char *, const char *);
 
 /* Struct for registering typical file access functions */
-struct file_operations malc_fops = {
+struct file_operations yes_fops = {
 	read: yes_read,
 };
 
@@ -120,7 +120,7 @@ int malc_init(void) {
 		goto fail;
 	}
 
-	cdev_init(&yes_cdev, &malc_fops);
+	cdev_init(&yes_cdev, &yes_fops);
 	int err1 = create_cdev(&yes_cdev, "yes", cl, 0);
 
 	cdev_init(&no_cdev, &no_fops);
