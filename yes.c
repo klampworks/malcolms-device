@@ -89,6 +89,10 @@ struct cdev yes_cdev,
 	    marriage_cdev,
 	    yesno_cdev;
 
+/* IMPORTANT, update this value when adding a new device
+ * or bad things happen. */
+int total_cdevs = 18;
+
 /* Register init and exit functions */
 module_init(malc_init);
 module_exit(malc_exit);
@@ -131,7 +135,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		18, 	/* Count of minor numbers required */
+		total_cdevs, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -236,27 +240,16 @@ void malc_exit(void) {
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		18		/* The number of minor devices */
+		total_cdevs	/* The number of minor devices */
 	);
 
-	device_destroy(cl, MKDEV(major, 0));
-	device_destroy(cl, MKDEV(major, 1));
-	device_destroy(cl, MKDEV(major, 2));
-	device_destroy(cl, MKDEV(major, 3));
-	device_destroy(cl, MKDEV(major, 4));
-	device_destroy(cl, MKDEV(major, 5));
-	device_destroy(cl, MKDEV(major, 6));
-	device_destroy(cl, MKDEV(major, 7));
-	device_destroy(cl, MKDEV(major, 8));
-	device_destroy(cl, MKDEV(major, 9));
-	device_destroy(cl, MKDEV(major, 10));
-	device_destroy(cl, MKDEV(major, 11));
-	device_destroy(cl, MKDEV(major, 12));
-	device_destroy(cl, MKDEV(major, 13));
-	device_destroy(cl, MKDEV(major, 14));
-	device_destroy(cl, MKDEV(major, 15));
-	device_destroy(cl, MKDEV(major, 16));
-	device_destroy(cl, MKDEV(major, 17));
+	/* Delete all the minor devices. */
+	{
+	int i;
+	for (i = 0; i < total_cdevs; i++)
+		device_destroy(cl, MKDEV(major, i));
+	}
+
 
 	class_destroy(cl);
 
