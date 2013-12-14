@@ -44,7 +44,7 @@ ssize_t marriage_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 void malc_exit(void);
 int malc_init(void);
-int create_cdev(struct cdev *, const char *, struct class *, int );
+int create_cdev(struct cdev *, const char *, struct class *, int, struct file_operations *fops);
 ssize_t generic_read(char *, const char *);
 ssize_t read_stream(char **, int*, struct file *, char *);
 
@@ -157,59 +157,41 @@ int malc_init(void) {
 		goto fail;
 	}
 
-	cdev_init(&yes_cdev, &yes_fops);
-	int err1 = create_cdev(&yes_cdev, "yes", cl, 0);
+	int err1 = create_cdev(&yes_cdev, "yes", cl, 0, &yes_fops);
 
-	cdev_init(&no_cdev, &no_fops);
-	int err2 = create_cdev(&no_cdev, "no", cl, 1);
+	int err2 = create_cdev(&no_cdev, "no", cl, 1, &no_fops);
 
-	cdev_init(&yes1_cdev, &yes_fops);
-	int err3 = create_cdev(&yes1_cdev, "yes.1", cl, 2);
+	int err3 = create_cdev(&yes1_cdev, "yes.1", cl, 2, &yes_fops);
 
-	cdev_init(&yess_cdev, &yes_fops);
-	int err4 = create_cdev(&yess_cdev, "yes.s", cl, 3);
+	int err4 = create_cdev(&yess_cdev, "yes.s", cl, 3, &yes_fops);
 
-	cdev_init(&yesr_cdev, &yes_fops);
-	int err5 = create_cdev(&yesr_cdev, "yes.r", cl, 4);
+	int err5 = create_cdev(&yesr_cdev, "yes.r", cl, 4, &yes_fops);
 
-	cdev_init(&yesi_cdev, &yes_fops);
-	int err6 = create_cdev(&yesi_cdev, "yes.i", cl, 5);
+	int err6 = create_cdev(&yesi_cdev, "yes.i", cl, 5, &yes_fops);
 
-	cdev_init(&yesu_cdev, &yes_fops);
-	int err7 = create_cdev(&yesu_cdev, "yes.u", cl, 6);
+	int err7 = create_cdev(&yesu_cdev, "yes.u", cl, 6, &yes_fops);
 
-	cdev_init(&yesl_cdev, &yes_fops);
-	int err8 = create_cdev(&yesl_cdev, "yes.l", cl, 7);
+	int err8 = create_cdev(&yesl_cdev, "yes.l", cl, 7, &yes_fops);
 
-	cdev_init(&no1_cdev, &no_fops);
-	int err9 = create_cdev(&no1_cdev, "no.1", cl, 8);
+	int err9 = create_cdev(&no1_cdev, "no.1", cl, 8, &no_fops);
 
-	cdev_init(&nos_cdev, &no_fops);
-	int err10 = create_cdev(&nos_cdev, "no.s", cl, 9);
+	int err10 = create_cdev(&nos_cdev, "no.s", cl, 9, &no_fops);
 
-	cdev_init(&nor_cdev, &no_fops);
-	int err11 = create_cdev(&nor_cdev, "no.r", cl, 10);
+	int err11 = create_cdev(&nor_cdev, "no.r", cl, 10, &no_fops);
 
-	cdev_init(&noi_cdev, &no_fops);
-	int err12 = create_cdev(&noi_cdev, "no.i", cl, 11);
+	int err12 = create_cdev(&noi_cdev, "no.i", cl, 11, &no_fops);
 
-	cdev_init(&nou_cdev, &no_fops);
-	int err13 = create_cdev(&nou_cdev, "no.u", cl, 12);
+	int err13 = create_cdev(&nou_cdev, "no.u", cl, 12, &no_fops);
 
-	cdev_init(&nol_cdev, &no_fops);
-	int err14 = create_cdev(&nol_cdev, "no.l", cl, 13);
+	int err14 = create_cdev(&nol_cdev, "no.l", cl, 13, &no_fops);
 
-	cdev_init(&maybe_cdev, &maybe_fops);
-	int err15 = create_cdev(&maybe_cdev, "maybe", cl, 14);
+	int err15 = create_cdev(&maybe_cdev, "maybe", cl, 14, &maybe_fops);
 
-	cdev_init(&yesno_cdev, &yesno_fops);
-	int err16 = create_cdev(&yesno_cdev, "yes.no", cl, 15);
+	int err16 = create_cdev(&yesno_cdev, "yes.no", cl, 15, &yesno_fops);
 
-	cdev_init(&woman_cdev, &yesno_fops);
-	int err17 = create_cdev(&woman_cdev, "woman", cl, 16);
+	int err17 = create_cdev(&woman_cdev, "woman", cl, 16, &yesno_fops);
 
-	cdev_init(&marriage_cdev, &marriage_fops);
-	int err18 = create_cdev(&marriage_cdev, "marriage", cl, 17);
+	int err18 = create_cdev(&marriage_cdev, "marriage", cl, 17, &marriage_fops);
 
 	if (err1 || err2 || err3)
 		goto fail;
@@ -222,7 +204,10 @@ int malc_init(void) {
 		return result;
 }
 
-int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor) {
+int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor,
+	struct file_operations *fops) {
+
+	cdev_init(cdev, fops);
 
 	cdev->owner = THIS_MODULE;
 
@@ -308,7 +293,6 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 
-	printk("Minor is %d\n", minor);
 	switch (minor) {
 
 		case 7: case 7+6:
