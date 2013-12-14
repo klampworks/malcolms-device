@@ -40,6 +40,7 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t yesno_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+ssize_t marriage_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 void malc_exit(void);
 int malc_init(void);
@@ -63,6 +64,11 @@ struct file_operations maybe_fops = {
 struct file_operations yesno_fops = {
 	read: yesno_read,
 };
+
+struct file_operations marriage_fops = {
+	read: marriage_read,
+};
+
 struct cdev yes_cdev,
        	    no_cdev,
 	    yes1_cdev,
@@ -80,6 +86,7 @@ struct cdev yes_cdev,
 
 	    maybe_cdev,
 	    woman_cdev,
+	    marriage_cdev,
 	    yesno_cdev;
 
 /* Register init and exit functions */
@@ -124,7 +131,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		17, 	/* Count of minor numbers required */
+		18, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -201,6 +208,9 @@ int malc_init(void) {
 	cdev_init(&woman_cdev, &yesno_fops);
 	int err17 = create_cdev(&woman_cdev, "woman", cl, 16);
 
+	cdev_init(&marriage_cdev, &marriage_fops);
+	int err18 = create_cdev(&marriage_cdev, "marriage", cl, 17);
+
 	if (err1 || err2 || err3)
 		goto fail;
 
@@ -257,10 +267,11 @@ void malc_exit(void) {
 	cdev_del(&maybe_cdev);
 	cdev_del(&yesno_cdev);
 	cdev_del(&woman_cdev);
+	cdev_del(&marriage_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		17		/* The number of minor devices */
+		18		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -280,6 +291,7 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 14));
 	device_destroy(cl, MKDEV(major, 15));
 	device_destroy(cl, MKDEV(major, 16));
+	device_destroy(cl, MKDEV(major, 17));
 
 	class_destroy(cl);
 
@@ -364,6 +376,11 @@ ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 ssize_t yesno_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	return generic_read(buf, yes_msg[0]);
+}
+
+ssize_t marriage_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+
+	return generic_read(buf, " i do");
 }
 
 ssize_t generic_read(char *buf, const char *msg) {
