@@ -55,7 +55,8 @@ struct file_operations no_fops = {
 
 struct cdev yes_cdev,
        	    no_cdev,
-	    yes1_cdev;
+	    yes1_cdev,
+	    yess_cdev;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -134,6 +135,9 @@ int malc_init(void) {
 	cdev_init(&yes1_cdev, &yes_fops);
 	int err3 = create_cdev(&yes1_cdev, "yes.1", cl, 2);
 
+	cdev_init(&yess_cdev, &yes_fops);
+	int err4 = create_cdev(&yess_cdev, "yes.s", cl, 3);
+
 	if (err1 || err2 || err3)
 		goto fail;
 
@@ -199,6 +203,10 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 		case 2:
 			/* yes.1 print the same message each time. */
 			return generic_read(buf, yes_msg[0]);
+
+		case 3:
+			/* yes.s Cannot be read. */
+			return 1;
 	}
 
 	static int index = 0;
