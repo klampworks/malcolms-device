@@ -157,44 +157,24 @@ int malc_init(void) {
 		goto fail;
 	}
 
-	int err1 = create_cdev(&yes_cdev, "yes", cl, 0, &yes_fops);
-
-	int err2 = create_cdev(&no_cdev, "no", cl, 1, &no_fops);
-
-	int err3 = create_cdev(&yes1_cdev, "yes.1", cl, 2, &yes_fops);
-
-	int err4 = create_cdev(&yess_cdev, "yes.s", cl, 3, &yes_fops);
-
-	int err5 = create_cdev(&yesr_cdev, "yes.r", cl, 4, &yes_fops);
-
-	int err6 = create_cdev(&yesi_cdev, "yes.i", cl, 5, &yes_fops);
-
-	int err7 = create_cdev(&yesu_cdev, "yes.u", cl, 6, &yes_fops);
-
-	int err8 = create_cdev(&yesl_cdev, "yes.l", cl, 7, &yes_fops);
-
-	int err9 = create_cdev(&no1_cdev, "no.1", cl, 8, &no_fops);
-
-	int err10 = create_cdev(&nos_cdev, "no.s", cl, 9, &no_fops);
-
-	int err11 = create_cdev(&nor_cdev, "no.r", cl, 10, &no_fops);
-
-	int err12 = create_cdev(&noi_cdev, "no.i", cl, 11, &no_fops);
-
-	int err13 = create_cdev(&nou_cdev, "no.u", cl, 12, &no_fops);
-
-	int err14 = create_cdev(&nol_cdev, "no.l", cl, 13, &no_fops);
-
-	int err15 = create_cdev(&maybe_cdev, "maybe", cl, 14, &maybe_fops);
-
-	int err16 = create_cdev(&yesno_cdev, "yes.no", cl, 15, &yesno_fops);
-
-	int err17 = create_cdev(&woman_cdev, "woman", cl, 16, &yesno_fops);
-
-	int err18 = create_cdev(&marriage_cdev, "marriage", cl, 17, &marriage_fops);
-
-	if (err1 || err2 || err3)
-		goto fail;
+	if (create_cdev( &yes_cdev,	"yes",	 	cl, 0,  &yes_fops	)) goto fail;
+	if (create_cdev( &no_cdev,	"no",	 	cl, 1,  &no_fops	)) goto fail;
+	if (create_cdev( &yes1_cdev,	"yes.1", 	cl, 2,  &yes_fops	)) goto fail;
+	if (create_cdev( &yess_cdev,	"yes.s", 	cl, 3,  &yes_fops	)) goto fail;
+	if (create_cdev( &yesr_cdev,	"yes.r", 	cl, 4,  &yes_fops	)) goto fail;
+	if (create_cdev( &yesi_cdev,	"yes.i", 	cl, 5,  &yes_fops	)) goto fail;
+	if (create_cdev( &yesu_cdev,	"yes.u", 	cl, 6,  &yes_fops	)) goto fail;
+	if (create_cdev( &yesl_cdev,	"yes.l", 	cl, 7,  &yes_fops	)) goto fail;
+	if (create_cdev( &no1_cdev,	"no.1",  	cl, 8,  &no_fops	)) goto fail;
+	if (create_cdev( &nos_cdev,	"no.s",  	cl, 9,  &no_fops	)) goto fail;
+	if (create_cdev( &nor_cdev,	"no.r",  	cl, 10, &no_fops	)) goto fail;
+	if (create_cdev( &noi_cdev,	"no.i",  	cl, 11, &no_fops	)) goto fail;
+	if (create_cdev( &nou_cdev,	"no.u",  	cl, 12, &no_fops	)) goto fail;
+	if (create_cdev( &nol_cdev,	"no.l",  	cl, 13, &no_fops	)) goto fail;
+	if (create_cdev( &maybe_cdev,	"maybe", 	cl, 14, &maybe_fops	)) goto fail;
+	if (create_cdev( &yesno_cdev,	"yes.no",	cl, 15, &yesno_fops	)) goto fail;
+	if (create_cdev( &woman_cdev,	"woman", 	cl, 16, &yesno_fops	)) goto fail;
+	if (create_cdev(&marriage_cdev, "marriage",	cl, 17, &marriage_fops	)) goto fail;
 
 	printk("<1>Inserting malc module\n");
 	return 0;
