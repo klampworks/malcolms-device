@@ -61,7 +61,13 @@ struct cdev yes_cdev,
 	    yesr_cdev,
 	    yesu_cdev,
 	    yesl_cdev,
-	    yesi_cdev;
+	    yesi_cdev,
+	    no1_cdev,
+	    nos_cdev,
+	    nor_cdev,
+	    nou_cdev,
+	    nol_cdev,
+	    noi_cdev;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -105,7 +111,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		8, 	/* Count of minor numbers required */
+		14, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -155,6 +161,24 @@ int malc_init(void) {
 	cdev_init(&yesl_cdev, &yes_fops);
 	int err8 = create_cdev(&yesl_cdev, "yes.l", cl, 7);
 
+	cdev_init(&no1_cdev, &no_fops);
+	int err9 = create_cdev(&no1_cdev, "no.1", cl, 8);
+
+	cdev_init(&nos_cdev, &no_fops);
+	int err10 = create_cdev(&nos_cdev, "no.s", cl, 9);
+
+	cdev_init(&nor_cdev, &no_fops);
+	int err11 = create_cdev(&nor_cdev, "no.r", cl, 10);
+
+	cdev_init(&noi_cdev, &no_fops);
+	int err12 = create_cdev(&noi_cdev, "no.i", cl, 11);
+
+	cdev_init(&nou_cdev, &no_fops);
+	int err13 = create_cdev(&nou_cdev, "no.u", cl, 12);
+
+	cdev_init(&nol_cdev, &no_fops);
+	int err14 = create_cdev(&nol_cdev, "no.l", cl, 13);
+
 	if (err1 || err2 || err3)
 		goto fail;
 
@@ -202,10 +226,16 @@ void malc_exit(void) {
 	cdev_del(&yesi_cdev);
 	cdev_del(&yesu_cdev);
 	cdev_del(&yesl_cdev);
+	cdev_del(&no1_cdev);
+	cdev_del(&nos_cdev);
+	cdev_del(&nor_cdev);
+	cdev_del(&noi_cdev);
+	cdev_del(&nou_cdev);
+	cdev_del(&nol_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		8		/* The number of minor devices */
+		14		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -216,6 +246,12 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 5));
 	device_destroy(cl, MKDEV(major, 6));
 	device_destroy(cl, MKDEV(major, 7));
+	device_destroy(cl, MKDEV(major, 8));
+	device_destroy(cl, MKDEV(major, 9));
+	device_destroy(cl, MKDEV(major, 10));
+	device_destroy(cl, MKDEV(major, 11));
+	device_destroy(cl, MKDEV(major, 12));
+	device_destroy(cl, MKDEV(major, 13));
 
 	class_destroy(cl);
 
@@ -232,18 +268,19 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 
+	printk("Minor is %d\n", minor);
 	switch (minor) {
 
-		case 7:
+		case 7: case 7+6:
 			/* yes.l print lower case. */
-		case 2:
+		case 2: case 2+6:
 			/* yes.1 print the same message each time. */
-			return generic_read(buf, yes_msg[0]);
+			return generic_read(buf, stream[0]);
 
-		case 3:
+		case 3: case 3+6:
 			/* yes.s Cannot be read. */
 			return 1;
-		case 4:
+		case 4: case 4+6:
 			/* yes.r Random output, either UPPER or lower. */
 
 			/* Generate 1 byte of random data. */
@@ -254,17 +291,17 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			/* If rand is odd, read UPPERCASE else lowercase. */
 			rand = rand & 1? 2: 0;
 
-			return generic_read(buf, yes_msg[rand]);
+			return generic_read(buf, stream[rand]);
 			}
-		case 5:
+		case 5: case 5+6:
 			/* yes.u always UPPER case. */
-		case 6:
+		case 6: case 6+6:
 			/* yes.i always UPPER case. */
-			return generic_read(buf, yes_msg[2]);
+			return generic_read(buf, stream[2]);
 			
 	}
 
-	int read = generic_read(buf, yes_msg[*index]);
+	int read = generic_read(buf, stream[*index]);
 
 	/* Rewind logic */
 	if (rewind && ++(*index) == 3)
@@ -281,18 +318,7 @@ ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 
 	static int index = 0;
-
-	ssize_t read = generic_read(buf, no_msg[index]);
-
-	/* Rewind logic */
-	if (rewind && ++(index) == 3)
-		index = 0;
-
-	/* Case insensitive */
-	if(global_options.opt_i)
-		index = 2;
-
-	return read;
+	return read_stream(no_msg, &index, filp, buf);
 }
 
 ssize_t generic_read(char *buf, const char *msg) {
