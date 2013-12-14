@@ -38,6 +38,7 @@ int malc_open(struct inode *inode, struct file *filp);
 int malc_release(struct inode *inode, struct file *filp);
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos);
 void malc_exit(void);
 int malc_init(void);
@@ -54,6 +55,10 @@ struct file_operations no_fops = {
 	read: no_read,
 };
 
+struct file_operations maybe_fops = {
+	read: maybe_read,
+};
+
 struct cdev yes_cdev,
        	    no_cdev,
 	    yes1_cdev,
@@ -67,7 +72,9 @@ struct cdev yes_cdev,
 	    nor_cdev,
 	    nou_cdev,
 	    nol_cdev,
-	    noi_cdev;
+	    noi_cdev,
+
+	    maybe_cdev;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -111,7 +118,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		14, 	/* Count of minor numbers required */
+		15, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -179,6 +186,8 @@ int malc_init(void) {
 	cdev_init(&nol_cdev, &no_fops);
 	int err14 = create_cdev(&nol_cdev, "no.l", cl, 13);
 
+	cdev_init(&maybe_cdev, &maybe_fops);
+	int err15 = create_cdev(&maybe_cdev, "maybe", cl, 14);
 	if (err1 || err2 || err3)
 		goto fail;
 
@@ -232,10 +241,11 @@ void malc_exit(void) {
 	cdev_del(&noi_cdev);
 	cdev_del(&nou_cdev);
 	cdev_del(&nol_cdev);
+	cdev_del(&maybe_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		14		/* The number of minor devices */
+		15		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -252,6 +262,7 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 11));
 	device_destroy(cl, MKDEV(major, 12));
 	device_destroy(cl, MKDEV(major, 13));
+	device_destroy(cl, MKDEV(major, 14));
 
 	class_destroy(cl);
 
@@ -319,6 +330,18 @@ ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	static int index = 0;
 	return read_stream(no_msg, &index, filp, buf);
+}
+
+ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+
+	int rand;
+	get_random_bytes(&rand, 1);
+
+	/* If rand is odd, do yes else no. */
+	char **stream = rand & 1? yes_msg: no_msg;
+
+	rand = 0;
+	return read_stream(stream, &rand, filp, buf);
 }
 
 ssize_t generic_read(char *buf, const char *msg) {
