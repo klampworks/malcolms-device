@@ -53,6 +53,10 @@ struct file_operations no_fops = {
 	read: no_read,
 };
 
+struct cdev yes_cdev,
+       	    no_cdev,
+	    yes1_cdev;
+
 /* Register init and exit functions */
 module_init(malc_init);
 module_exit(malc_exit);
@@ -64,8 +68,6 @@ long next_call;
 dev_t first = 0, major;
 struct class *cl;
 
-struct cdev yes_cdev;
-struct cdev no_cdev;
 
 struct m_device {
 	
@@ -74,6 +76,9 @@ struct m_device {
 	struct cdev cdev;
 	struct file_operations fops;
 };
+
+const char *yes_msg[] = {"yes", "Yes", "YES"};
+const char *no_msg[] = {"no", "No", "NO"};
 
 #include <linux/time.h>
 int malc_init(void) {
@@ -126,7 +131,10 @@ int malc_init(void) {
 	cdev_init(&no_cdev, &no_fops);
 	int err2 = create_cdev(&no_cdev, "no", cl, 1);
 
-	if (err1 || err2)
+	cdev_init(&yes1_cdev, &yes_fops);
+	int err3 = create_cdev(&yes1_cdev, "yes.1", cl, 2);
+
+	if (err1 || err2 || err3)
 		goto fail;
 
 	printk("<1>Inserting malc module\n");
@@ -183,16 +191,19 @@ void malc_exit(void) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	/*
+	
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
-	printk("<1>Minor number is %d\n", minor);
-	*/
 
-	const char *msg[] = {"yes", "Yes", "YES"};
+	switch (minor) {
+
+		case 2:
+			/* yes.1 print the same message each time. */
+			return generic_read(buf, yes_msg[0]);
+	}
 
 	static int index = 0;
 
-	int read =  generic_read(buf, msg[index]);
+	int read = generic_read(buf, yes_msg[index]);
 
 	/* Rewind logic */
 	if (rewind && ++(index) == 3)
@@ -208,11 +219,10 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	const char *msg[] = {"no", "No", "NO"};
 
 	static int index = 0;
 
-	ssize_t read = generic_read(buf, msg[index]);
+	ssize_t read = generic_read(buf, no_msg[index]);
 
 	/* Rewind logic */
 	if (rewind && ++(index) == 3)
