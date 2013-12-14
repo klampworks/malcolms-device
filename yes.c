@@ -59,6 +59,7 @@ struct cdev yes_cdev,
 	    yess_cdev,
 	    yesr_cdev,
 	    yesu_cdev,
+	    yesl_cdev,
 	    yesi_cdev;
 
 /* Register init and exit functions */
@@ -103,7 +104,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		7, 	/* Count of minor numbers required */
+		8, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -149,6 +150,9 @@ int malc_init(void) {
 
 	cdev_init(&yesu_cdev, &yes_fops);
 	int err7 = create_cdev(&yesu_cdev, "yes.u", cl, 6);
+
+	cdev_init(&yesl_cdev, &yes_fops);
+	int err8 = create_cdev(&yesl_cdev, "yes.l", cl, 7);
 
 	if (err1 || err2 || err3)
 		goto fail;
@@ -196,10 +200,11 @@ void malc_exit(void) {
 	cdev_del(&yesr_cdev);
 	cdev_del(&yesi_cdev);
 	cdev_del(&yesu_cdev);
+	cdev_del(&yesl_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		7		/* The number of minor devices */
+		8		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -209,6 +214,7 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 4));
 	device_destroy(cl, MKDEV(major, 5));
 	device_destroy(cl, MKDEV(major, 6));
+	device_destroy(cl, MKDEV(major, 7));
 
 	class_destroy(cl);
 
@@ -222,6 +228,8 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	switch (minor) {
 
+		case 7:
+			/* yes.l print lower case. */
 		case 2:
 			/* yes.1 print the same message each time. */
 			return generic_read(buf, yes_msg[0]);
