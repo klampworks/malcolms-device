@@ -11,7 +11,7 @@
 #include <asm/uaccess.h> /*copy_from/to_user */
 #include <linux/device.h> /* class_creatre */
 #include <linux/cdev.h> /* cdev_init */
-
+#include <linux/random.h> /* For get_random_bytes. */ 
 MODULE_LICENSE("GPL v2");
 
 /* These options will be copied into the global_options struct */
@@ -57,6 +57,7 @@ struct cdev yes_cdev,
        	    no_cdev,
 	    yes1_cdev,
 	    yess_cdev;
+	    yesr_cdev;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -100,7 +101,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		4, 	/* Count of minor numbers required */
+		5, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -137,6 +138,9 @@ int malc_init(void) {
 
 	cdev_init(&yess_cdev, &yes_fops);
 	int err4 = create_cdev(&yess_cdev, "yes.s", cl, 3);
+
+	cdev_init(&yesr_cdev, &yes_fops);
+	int err5 = create_cdev(&yesr_cdev, "yes.r", cl, 4);
 
 	if (err1 || err2 || err3)
 		goto fail;
@@ -181,16 +185,18 @@ void malc_exit(void) {
 	cdev_del(&no_cdev);
 	cdev_del(&yes1_cdev);
 	cdev_del(&yess_cdev);
+	cdev_del(&yesr_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		4		/* The number of minor devices */
+		5		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
 	device_destroy(cl, MKDEV(major, 1));
 	device_destroy(cl, MKDEV(major, 2));
 	device_destroy(cl, MKDEV(major, 3));
+	device_destroy(cl, MKDEV(major, 4));
 
 	class_destroy(cl);
 
@@ -211,6 +217,19 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 		case 3:
 			/* yes.s Cannot be read. */
 			return 1;
+		case 4:
+			/* yes.r Random output, either UPPER or lower. */
+
+			/* Generate 1 byte of random data. */
+			{
+			int rand;
+			get_random_bytes(&rand, 1);
+
+			/* If rand is odd, read UPPERCASE else lowercase. */
+			rand = rand & 1? 2: 0;
+
+			return generic_read(buf, yes_msg[rand]);
+			}
 	}
 
 	static int index = 0;
