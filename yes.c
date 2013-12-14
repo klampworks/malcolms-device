@@ -47,9 +47,6 @@ ssize_t generic_read(char *, const char *);
 /* Struct for registering typical file access functions */
 struct file_operations malc_fops = {
 	read: yes_read,
-	write: malc_write,
-	open: malc_open,
-	release: malc_release
 };
 
 struct file_operations no_fops = {
@@ -148,17 +145,17 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 
 	if (err) {
 
-		printk("<1> Yes: Could not cdev_add.");
+		printk("<1> Malc: Could not cdev_add.");
 		return 1;
 	}
 
 	struct device *device = device_create(cl, 
-		NULL, /*No Parent device*/
+		NULL, /*No Parent device. */
 		MKDEV(major, minor), 
-		NULL, /* No additional data */
+		NULL, /* No additional data. */
 		name);
 
-	/*Will only check second definition. */
+	/* Will only check second definition. */
 	if (IS_ERR(device)) {
 		return 1;
 	}
@@ -182,17 +179,6 @@ void malc_exit(void) {
 	class_destroy(cl);
 
 	printk("<1>Removing malc module\n");
-}
-
-
-int malc_open(struct inode *inode, struct file *filp) {
-
-	return 0;
-}
-
-int malc_release(struct inode *inode, struct file *filp) {
-
-	return 0;
 }
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
@@ -266,17 +252,5 @@ ssize_t generic_read(char *buf, const char *msg) {
 		put_user(*i, buf++);
 	}
 
-	/* Make sure that the correct number is returned. */
-	/*printk("result = %d\n", i - msg); */
-
 	return i - msg;
 }
-
-ssize_t malc_write(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
-
-	char *tmp;
-
-	//tmp = buf + count - 1;
-	return 1;
-}
-	
