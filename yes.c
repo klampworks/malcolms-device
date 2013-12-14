@@ -79,6 +79,7 @@ struct cdev yes_cdev,
 	    noi_cdev,
 
 	    maybe_cdev,
+	    woman_cdev,
 	    yesno_cdev;
 
 /* Register init and exit functions */
@@ -123,7 +124,7 @@ int malc_init(void) {
 	int result = alloc_chrdev_region(
 		&first, /* Return data */
 		0, 	/* The major minor number */
-		16, 	/* Count of minor numbers required */
+		17, 	/* Count of minor numbers required */
 		"malc"/* Name */
 	);
 
@@ -197,6 +198,9 @@ int malc_init(void) {
 	cdev_init(&yesno_cdev, &yesno_fops);
 	int err16 = create_cdev(&yesno_cdev, "yes.no", cl, 15);
 
+	cdev_init(&woman_cdev, &yesno_fops);
+	int err17 = create_cdev(&woman_cdev, "woman", cl, 16);
+
 	if (err1 || err2 || err3)
 		goto fail;
 
@@ -252,10 +256,11 @@ void malc_exit(void) {
 	cdev_del(&nol_cdev);
 	cdev_del(&maybe_cdev);
 	cdev_del(&yesno_cdev);
+	cdev_del(&woman_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
-		16		/* The number of minor devices */
+		17		/* The number of minor devices */
 	);
 
 	device_destroy(cl, MKDEV(major, 0));
@@ -274,6 +279,7 @@ void malc_exit(void) {
 	device_destroy(cl, MKDEV(major, 13));
 	device_destroy(cl, MKDEV(major, 14));
 	device_destroy(cl, MKDEV(major, 15));
+	device_destroy(cl, MKDEV(major, 16));
 
 	class_destroy(cl);
 
