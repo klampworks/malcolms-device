@@ -43,6 +43,7 @@ void malc_exit(void);
 int malc_init(void);
 int create_cdev(struct cdev *, const char *, struct class *, int );
 ssize_t generic_read(char *, const char *);
+ssize_t read_stream(char **, int*, struct file *, char *);
 
 /* Struct for registering typical file access functions */
 struct file_operations yes_fops = {
@@ -223,7 +224,12 @@ void malc_exit(void) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	
+	static int index = 0;
+	return read_stream(yes_msg, &index, filp, buf);
+}
+
+ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
+
 	int minor = MINOR(filp->f_dentry->d_inode->i_rdev);
 
 	switch (minor) {
@@ -258,19 +264,16 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 			
 	}
 
-	static int index = 0;
-
-	int read = generic_read(buf, yes_msg[index]);
+	int read = generic_read(buf, yes_msg[*index]);
 
 	/* Rewind logic */
-	if (rewind && ++(index) == 3)
-		index = 0;
+	if (rewind && ++(*index) == 3)
+		*index = 0;
 
 	/* Case insensitive */
 	if(global_options.opt_i)
-		index = 2;
+		*index = 2;
 
-	printk("returning %d\n", read);
 	return read;
 }
 
