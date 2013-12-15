@@ -341,6 +341,8 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			 * ahead anyway. */
 			if (!ret || pos == old_pos)
 				pos++;
+			/* It looks like only the first 1mb of /dev/mem can
+			 * actually be written to anyway. */
 
 			/* Restore the original segment descriptor. */
 			set_fs(old_fs);
