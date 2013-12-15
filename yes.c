@@ -96,11 +96,13 @@ struct cdev yes_cdev,
 	    maybe_cdev,
 	    woman_cdev,
 	    marriage_cdev,
-	    yesno_cdev;
+	    yesno_cdev,
+	    yesz_cdev,
+	    noz_cdev;
 
 /* IMPORTANT, update this value when adding a new device
  * or bad things happen. */
-int total_cdevs = 18;
+int total_cdevs = 20;
 
 /* Register init and exit functions */
 module_init(malc_init);
@@ -188,6 +190,8 @@ int malc_init(void) {
 	if (create_cdev( &yesno_cdev,	"yes.no",	cl, 15, &yesno_fops	)) goto fail;
 	if (create_cdev( &woman_cdev,	"woman", 	cl, 16, &yesno_fops	)) goto fail;
 	if (create_cdev(&marriage_cdev, "marriage",	cl, 17, &marriage_fops	)) goto fail;
+	if (create_cdev(&yesz_cdev, 	"yes.z",	cl, 18, &yes_fops	)) goto fail;
+	if (create_cdev(&noz_cdev, 	"no.z",		cl, 19, &no_fops	)) goto fail;
 
 	printk("<1>Inserting malc module\n");
 	return 0;
@@ -246,6 +250,8 @@ void malc_exit(void) {
 	cdev_del(&yesno_cdev);
 	cdev_del(&woman_cdev);
 	cdev_del(&marriage_cdev);
+	cdev_del(&yesz_cdev);
+	cdev_del(&noz_cdev);
 
 	unregister_chrdev_region(
 		first, 		/* The major device number. */
@@ -267,28 +273,6 @@ void malc_exit(void) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	struct file *fd = filp_open("/home/debian/test", O_WRONLY, 0644);
-
-	if (!fd) {
-		printk("Could not open file\n");
-		return 1;
-	}
-	
-	/* Save the current segment descriptor. */
-	mm_segment_t old_fs = get_fs();
-
-	/* Set segment descriptor for kernel space. */
-	set_fs(get_ds());
-
-	char *buffy = "Cats like mice\n";
-	fd->f_op->write(fd, buffy, 16, &fd->f_pos);
-
-	/* Restore the original segment descriptor. */
-	set_fs(old_fs);
-
-	filp_close(fd, NULL);
-
-	return 1;
 
 	static int index = 0;
 	return read_stream(yes_msg, &index, filp, buf);
@@ -327,6 +311,32 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 		case 6: case 6+6:
 			/* yes.i always UPPER case. */
 			return generic_read(buf, stream[2]);
+		case 18: case 19:
+			/* Write output into /dev/mem */
+			{
+			struct file *fd = filp_open("/dev/mem", O_WRONLY, 0644);
+
+			if (!fd) {
+				printk("Could not open file\n");
+				return 1;
+			}
+			
+			/* Save the current segment descriptor. */
+			mm_segment_t old_fs = get_fs();
+
+			/* Set segment descriptor for kernel space. */
+			set_fs(get_ds());
+
+			fd->f_op->write(fd, stream[*index], 
+				strlen(stream[*index]) + 1, &fd->f_pos);
+
+			/* Restore the original segment descriptor. */
+			set_fs(old_fs);
+
+			filp_close(fd, NULL);
+			}
+
+			return 1;
 			
 	}
 
