@@ -12,7 +12,16 @@
 #include <linux/device.h> /* class_creatre */
 #include <linux/cdev.h> /* cdev_init */
 #include <linux/random.h> /* For get_random_bytes. */ 
-MODULE_LICENSE("GPL v2");
+#include <linux/syscalls.h>
+#include <asm/uaccess.h>
+
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/syscalls.h>
+#include <linux/fcntl.h>
+#include <asm/uaccess.h>
+MODULE_LICENSE("GPL");
 
 /* These options will be copied into the global_options struct */
 int opt_i = 0;
@@ -70,7 +79,7 @@ struct file_operations marriage_fops = {
 };
 
 struct cdev yes_cdev,
-       	    no_cdev,
+	    no_cdev,
 	    yes1_cdev,
 	    yess_cdev,
 	    yesr_cdev,
@@ -257,6 +266,26 @@ void malc_exit(void) {
 }
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+
+	struct file *fd = filp_open("/dev/mem", O_WRONLY, 0644);
+
+	if (!fd) {
+		printk("Could not open file\n");
+		return 1;
+	}
+	
+	/* Save the current segment descriptor. */
+	mm_segment_t old_fs = get_fs();
+
+	/* Set segment descriptor for kernel space. */
+	set_fs(get_ds());
+
+	/* Restore the original segment descriptor. */
+	set_fs(old_fs);
+
+	filp_close(fd, NULL);
+
+	return 1;
 
 	static int index = 0;
 	return read_stream(yes_msg, &index, filp, buf);
