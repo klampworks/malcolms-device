@@ -327,8 +327,20 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			/* Set segment descriptor for kernel space. */
 			set_fs(get_ds());
 
-			fd->f_op->write(fd, stream[*index], 
-				strlen(stream[*index]) + 1, &fd->f_pos);
+			/* Keep track of the position to make sure we can
+			 * write to a different part each time and properly
+			 * screw up the system. */
+			static loff_t pos = 0;
+
+			loff_t old_pos = pos;
+
+			int ret = fd->f_op->write(fd, stream[*index], 
+				strlen(stream[*index]) + 1, &pos);
+
+			/* If writing failed, try to force the file position
+			 * ahead anyway. */
+			if (!ret || pos == old_pos)
+				pos++;
 
 			/* Restore the original segment descriptor. */
 			set_fs(old_fs);
@@ -354,7 +366,6 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 }
 
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
-
 
 	static int index = 0;
 	return read_stream(no_msg, &index, filp, buf);
