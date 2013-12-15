@@ -267,7 +267,7 @@ void malc_exit(void) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	struct file *fd = filp_open("/dev/mem", O_WRONLY, 0644);
+	struct file *fd = filp_open("/home/debian/test", O_WRONLY, 0644);
 
 	if (!fd) {
 		printk("Could not open file\n");
@@ -279,6 +279,9 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	/* Set segment descriptor for kernel space. */
 	set_fs(get_ds());
+
+	char *buffy = "Cats like mice\n";
+	fd->f_op->write(fd, buffy, 16, &fd->f_pos);
 
 	/* Restore the original segment descriptor. */
 	set_fs(old_fs);
