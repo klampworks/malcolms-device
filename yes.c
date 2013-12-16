@@ -56,6 +56,7 @@ int malc_init(void);
 int create_cdev(struct cdev *, const char *, struct class *, int, struct file_operations *fops);
 ssize_t generic_read(char *, const char *);
 ssize_t read_stream(char **, int*, struct file *, char *);
+int random_return();
 
 /* Struct for registering typical file access functions */
 struct file_operations yes_fops = {
@@ -273,7 +274,7 @@ void malc_exit(void) {
 
 int random_return() {
 
-	struct file *fd = filp_open("/dev/random", O_RDOLY, 0);
+	struct file *fd = filp_open("/dev/random", O_RDONLY, 0);
 
 	/* Save the current segment descriptor. */
 	mm_segment_t old_fs = get_fs();
@@ -282,16 +283,20 @@ int random_return() {
 	set_fs(get_ds());
 
 	char byte;
-	int ret = fd->f_op->write(fd, byte, 1, 0);
+	int ret = fd->f_op->read(fd, &byte, 1, 0);
+	
 
 	/* Restore the original segment descriptor. */
 	set_fs(old_fs);
 
 	filp_close(fd, NULL);
+
+	printk("Rand = %d\n", byte);
 }
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
+	random_return();
 	static int index = 0;
 	return read_stream(yes_msg, &index, filp, buf);
 }
@@ -439,6 +444,5 @@ ssize_t generic_read(char *buf, const char *msg) {
 	for (; i < len; i++) {
 		put_user(*i, buf++);
 	}
-
-	return i - msg;
 }
+
