@@ -271,7 +271,7 @@ void malc_exit(void) {
 	printk("<1>Removing malc module\n");
 }
 
-ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
+int random_return() {
 
 	struct file *fd = filp_open("/dev/random", O_RDOLY, 0);
 
@@ -288,6 +288,9 @@ ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 	set_fs(old_fs);
 
 	filp_close(fd, NULL);
+}
+
+ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	static int index = 0;
 	return read_stream(yes_msg, &index, filp, buf);
