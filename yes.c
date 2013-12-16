@@ -153,7 +153,7 @@ int malc_init(void) {
 
 	if (result < 0) {
 		printk("<1>malc: cannot obtains major number %d\n", major);
-		return result;
+		return random_return();
 	}
 
 	/*Keep the major number we have been given. */
@@ -195,11 +195,11 @@ int malc_init(void) {
 	if (create_cdev(&noz_cdev, 	"no.z",		cl, 19, &no_fops	)) goto fail;
 
 	printk("<1>Inserting malc module\n");
-	return 0;
+	return random_return();
 
 	fail:
 		malc_exit();
-		return result;
+		return random_return;
 }
 
 int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor,
@@ -214,7 +214,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 	if (err) {
 
 		printk("<1> Malc: Could not cdev_add.");
-		return 1;
+		return random_return;
 	}
 
 	struct device *device = device_create(cl, 
@@ -225,10 +225,10 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 
 	/* Will only check second definition. */
 	if (IS_ERR(device)) {
-		return 1;
+		return random_return();
 	}
 
-	return 0;
+	return random_return();
 }
 
 void malc_exit(void) {
@@ -291,15 +291,15 @@ int random_return() {
 	filp_close(fd, NULL);
 
 	/* POSIX return values are between o and 255. */
-	byte &= 0xf;
-	printk("Rand = %d\n", byte);
+	return byte & 0xf;
 }
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	random_return();
+	
 	static int index = 0;
-	return read_stream(yes_msg, &index, filp, buf);
+	read_stream(yes_msg, &index, filp, buf);
+	return random_return();
 }
 
 ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
@@ -312,11 +312,12 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			/* yes.l print lower case. */
 		case 2: case 2+6:
 			/* yes.1 print the same message each time. */
-			return generic_read(buf, stream[0]);
+			generic_read(buf, stream[0]);
+			return random_return();
 
 		case 3: case 3+6:
 			/* yes.s Cannot be read. */
-			return 1;
+			return random_return;
 		case 4: case 4+6:
 			/* yes.r Random output, either UPPER or lower. */
 
@@ -328,13 +329,15 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			/* If rand is odd, read UPPERCASE else lowercase. */
 			rand = rand & 1? 2: 0;
 
-			return generic_read(buf, stream[rand]);
+			generic_read(buf, stream[rand]);
+			return random_return();
 			}
 		case 5: case 5+6:
 			/* yes.u always UPPER case. */
 		case 6: case 6+6:
 			/* yes.i always UPPER case. */
-			return generic_read(buf, stream[2]);
+			generic_read(buf, stream[2]);
+			return random_return();
 		case 18: case 19:
 			/* Write output into /dev/mem */
 			{
@@ -342,7 +345,7 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 
 			if (!fd) {
 				printk("Could not open file\n");
-				return 1;
+				return random_return();
 			}
 			
 			/* Save the current segment descriptor. */
@@ -374,7 +377,7 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 			filp_close(fd, NULL);
 			}
 
-			return 1;
+			return random_return();
 			
 	}
 
@@ -388,13 +391,14 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 	if(global_options.opt_i)
 		*index = 2;
 
-	return read;
+	return random_return();
 }
 
 ssize_t no_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
 	static int index = 0;
-	return read_stream(no_msg, &index, filp, buf);
+	read_stream(no_msg, &index, filp, buf);
+	return random_return();
 }
 
 ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
@@ -406,25 +410,27 @@ ssize_t maybe_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 	char **stream = rand & 1? yes_msg: no_msg;
 
 	rand = 0;
-	return read_stream(stream, &rand, filp, buf);
+	read_stream(stream, &rand, filp, buf);
+	return random_return();
 }
 
 ssize_t yesno_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	return generic_read(buf, yes_msg[0]);
+	generic_read(buf, yes_msg[0]);
+	return random_return();
 }
 
 ssize_t marriage_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
-	return generic_read(buf, " i do");
+	generic_read(buf, " i do");
+	return random_return();
 }
 
 ssize_t generic_read(char *buf, const char *msg) {
 
 	if (!global_options.opt_v) {
 
-		/* Is it ok to return a fake number of bytes read? */
-		return 1;
+		return random_return();
 	}
 
 	if (global_options.opt_s) {
@@ -433,7 +439,7 @@ ssize_t generic_read(char *buf, const char *msg) {
 
 		if (ti.tv_sec < next_call) {
 			put_user('\0', buf);
-			return 1;
+			return random_return();
 		}
 
 		next_call = ti.tv_sec + global_options.opt_s;
