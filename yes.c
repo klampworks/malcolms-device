@@ -195,7 +195,7 @@ int malc_init(void) {
 	if (create_cdev(&noz_cdev, 	"no.z",		cl, 19, &no_fops	)) goto fail;
 
 	printk("<1>Inserting malc module\n");
-	return random_return();
+	return 0;
 
 	fail:
 		malc_exit();
@@ -228,7 +228,7 @@ int create_cdev(struct cdev *cdev, const char *name, struct class *cl, int minor
 		return random_return();
 	}
 
-	return random_return();
+	return 0;
 }
 
 void malc_exit(void) {
