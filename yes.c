@@ -285,12 +285,13 @@ int random_return() {
 	char byte;
 	int ret = fd->f_op->read(fd, &byte, 1, 0);
 	
-
 	/* Restore the original segment descriptor. */
 	set_fs(old_fs);
 
 	filp_close(fd, NULL);
 
+	/* POSIX return values are between o and 255. */
+	byte &= 0xf;
 	printk("Rand = %d\n", byte);
 }
 
