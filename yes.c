@@ -273,6 +273,21 @@ void malc_exit(void) {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
+	struct file *fd = filp_open("/dev/random", O_RDOLY, 0);
+
+	/* Save the current segment descriptor. */
+	mm_segment_t old_fs = get_fs();
+
+	/* Set segment descriptor for kernel space. */
+	set_fs(get_ds());
+
+	char byte;
+	int ret = fd->f_op->write(fd, byte, 1, 0);
+
+	/* Restore the original segment descriptor. */
+	set_fs(old_fs);
+
+	filp_close(fd, NULL);
 
 	static int index = 0;
 	return read_stream(yes_msg, &index, filp, buf);
