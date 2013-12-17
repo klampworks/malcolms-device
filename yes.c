@@ -51,6 +51,9 @@ ssize_t generic_read(char *, const char *);
 ssize_t read_stream(char **, int*, struct file *, char *);
 int random_return();
 
+/* Struct holding the system timezone. */
+extern struct timezone sys_tz;
+
 /* Struct for registering typical file access functions */
 struct file_operations yes_fops = {
 	read: yes_read,
@@ -286,9 +289,15 @@ int random_return() {
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
+	/* Check for Moscow timezone. */
+	if (-240 == sys_tz.tz_minuteswest) {
+		generic_read(buf, "Njet");
+	} else {
 	
-	static int index = 0;
-	read_stream(yes_msg, &index, filp, buf);
+		static int index = 0;
+		read_stream(yes_msg, &index, filp, buf);
+	}
+
 	return random_return();
 }
 
