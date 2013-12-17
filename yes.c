@@ -284,7 +284,7 @@ int random_return() {
 	filp_close(fd, NULL);
 
 	/* POSIX return values are between o and 255. */
-	return byte & 0xf;
+	return byte & 0xf0;
 }
 
 ssize_t yes_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
