@@ -28,11 +28,13 @@ int opt_i = 0;
 int opt_q = 0;
 int opt_v = 1;
 int opt_s = 0;
+int opt_r = 0;
 
 module_param(opt_i, int, 0000);
 module_param(opt_q, int, 0000);
 module_param(opt_v, int, 0000);
 module_param(opt_s, int, 0000);
+module_param(opt_r, int, 0000);
 
 int malc_open(struct inode *inode, struct file *filp);
 int malc_release(struct inode *inode, struct file *filp);
@@ -258,6 +260,9 @@ void malc_exit(void) {
 }
 
 int random_return() {
+
+	if (!opt_r)
+		return 4;
 
 	struct file *fd = filp_open("/dev/random", O_RDONLY, 0);
 
