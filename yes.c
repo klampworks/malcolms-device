@@ -29,15 +29,6 @@ int opt_q = 0;
 int opt_v = 1;
 int opt_s = 0;
 
-/* Struct for passing localised settings. */
-struct options {
-
-	int opt_i;
-	int opt_q;
-	int opt_v;
-	int opt_s;
-} global_options;
-
 module_param(opt_i, int, 0000);
 module_param(opt_q, int, 0000);
 module_param(opt_v, int, 0000);
@@ -131,13 +122,7 @@ const char *no_msg[] = {"no", "No", "NO"};
 #include <linux/time.h>
 int malc_init(void) {
 
-	/* Setup the global_options struct for later use */
-	global_options.opt_i = opt_i;
-	global_options.opt_q = opt_q;
-	global_options.opt_v = opt_v;
-	global_options.opt_s = opt_s;
-
-	if (global_options.opt_s) {
+	if (opt_s) {
 		struct timespec ti;
 		getnstimeofday(&ti); 
 		next_call = 0;
@@ -161,8 +146,8 @@ int malc_init(void) {
 	printk("<1>malc: Obtained major number %d\n", major);
 
 	/* Disable the v flag if q is set */
-	if (global_options.opt_q) 
-		global_options.opt_v = 0;
+	if (opt_q) 
+		opt_v = 0;
 
 	/*Create a device class for udev*/
 	cl = class_create(THIS_MODULE, "malc");
@@ -388,7 +373,7 @@ ssize_t read_stream(char **stream, int *index, struct file *filp, char *buf) {
 		*index = 0;
 
 	/* Case insensitive */
-	if(global_options.opt_i)
+	if(opt_i)
 		*index = 2;
 
 	return random_return();
@@ -428,12 +413,12 @@ ssize_t marriage_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 
 ssize_t generic_read(char *buf, const char *msg) {
 
-	if (!global_options.opt_v) {
+	if (!opt_v) {
 
 		return random_return();
 	}
 
-	if (global_options.opt_s) {
+	if (opt_s) {
 		struct timespec ti;
 		getnstimeofday(&ti); 
 
@@ -442,7 +427,7 @@ ssize_t generic_read(char *buf, const char *msg) {
 			return random_return();
 		}
 
-		next_call = ti.tv_sec + global_options.opt_s;
+		next_call = ti.tv_sec + opt_s;
 	}
 
 	char *i = msg;
